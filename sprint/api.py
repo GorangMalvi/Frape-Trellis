@@ -148,6 +148,11 @@ def get_user_descendants(user=None):
 		cache = frappe.local._sprint_descendants = {}
 	if user in cache:
 		return cache[user]
+	# `manager` is a site-level custom field on User, not core Frappe — without it
+	# there is no reporting tree, so a user sees only their own tickets.
+	if not frappe.get_meta("User").has_field("manager"):
+		cache[user] = []
+		return cache[user]
 	seen = set()
 	frontier = [user]
 	while frontier:
