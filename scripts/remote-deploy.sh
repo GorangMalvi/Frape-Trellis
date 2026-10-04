@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Runs ON the target server (piped over SSH by .github/workflows/deploy.yml).
+# Runs ON the target server — piped over SSH by scripts/deploy.sh (run that, not this).
 #
-# Expects (exported by the workflow):
+# Expects (exported by scripts/deploy.sh):
 #   BENCH_PATH   e.g. /home/frappe/frappe-bench
 #   SITE_NAME    e.g. sprint.example.com
 #   DEPLOY_REF   commit SHA to deploy (already pushed to origin)

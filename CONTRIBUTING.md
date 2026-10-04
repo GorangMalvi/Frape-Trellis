@@ -1,18 +1,20 @@
 # Contributing & release process
 
-How code moves from a laptop to production. The rules below are **enforced by
-GitHub** (rulesets in `.github/rulesets/`), not just convention.
+How code moves from a laptop to production. The merge rules below are **enforced by
+GitHub** (rulesets in `.github/rulesets/`, free on public repos). There is **no
+GitHub Actions / paid CI**: checks run on your machine and deploys are one command.
 
 ## Branches
 
-| Branch | Purpose | Deploys to | Direct push |
+| Branch | Purpose | Deployed to | Direct push |
 |---|---|---|---|
-| `main` | Production. Every commit is releasable. | **production** (after approval) | ❌ PR only |
-| `dev` | Integration. Features land here first. | **staging** | ❌ PR only |
+| `main` | Production. Every commit is releasable. | production | ❌ PR only |
+| `dev` | Integration. Features land here first. | staging | ❌ PR only |
 | `feat/*`, `fix/*`, `chore/*` | One change each, branched from `dev` | — | ✅ |
 | `hotfix/*` | Urgent production fix, branched from `main` | — | ✅ |
 
-`dev` is the default branch, so new PRs target it automatically.
+`dev` is the default branch, so new PRs target it automatically. Neither `main` nor
+`dev` can be force-pushed or deleted.
 
 ## Everyday flow
 
@@ -20,100 +22,102 @@ GitHub** (rulesets in `.github/rulesets/`), not just convention.
 git switch dev && git pull
 git switch -c feat/calendar-drag        # or fix/…, chore/…
 # …work, commit…
+# before pushing: run the checks (see "Checks before a PR")
 git push -u origin feat/calendar-drag
 gh pr create --base dev --fill          # or open the PR on github.com
 ```
 
-1. CI runs on the PR: **Lint**, **Frontend build**, **Server tests**. All three must pass.
-2. Resolve all review conversations.
-3. **Squash-merge** into `dev` (one clean commit per feature). The branch is auto-deleted.
-4. The merge to `dev` re-runs CI and deploys to **staging**.
+1. Fill in the PR checklist. All review conversations must be resolved before merging.
+2. **Squash-merge** into `dev` (one clean commit per feature). The branch is auto-deleted.
+3. Deploy to staging: `bash scripts/deploy.sh staging`.
 
 ## Releasing to production
 
-```bash
-gh pr create --base main --head dev --title "Release v0.2.0"
-```
-
-1. Open a PR **`dev` → `main`**. It must be up to date with `main`, CI must pass, and it
-   needs **1 approving review** (code owners). Admins can bypass the approval for
-   solo work, but only through a PR. Nobody can push to `main` directly.
-2. Merge with a **merge commit**, never squash, so `dev` and `main` keep a shared history
-   and the next release doesn't conflict.
-3. The push to `main` runs CI, then the **production** deploy waits for a reviewer to
-   approve it under *Actions → Deploy*.
-4. Tag the release (tags are the rollback points):
+1. In a PR into `dev`, bump `__version__` in `sprint/__init__.py` (e.g. `0.2.0`).
+2. Open a PR **`dev` → `main`**:
    ```bash
-   # bump __version__ in sprint/__init__.py in the release PR first
+   gh pr create --base main --head dev --title "Release v0.2.0"
+   ```
+   It needs **1 approving review** from a code owner. Working solo, an admin can
+   skip the approval, but only through a PR (`gh pr merge --merge --admin`). Nobody
+   can push to `main` directly.
+3. Merge with a **merge commit**, never squash, so `dev` and `main` keep a shared history
+   and the next release doesn't conflict.
+4. Tag the release (tags are the rollback points; release tags can't be moved or deleted):
+   ```bash
    git switch main && git pull
    git tag -a v0.2.0 -m "v0.2.0" && git push origin v0.2.0
+   gh release create v0.2.0 --verify-tag --generate-notes     # optional release page
    ```
-   `release.yml` checks that the tag is on `main` and matches `__version__`, then
-   publishes a GitHub Release with generated notes. Release tags can't be moved or deleted.
+5. Deploy: `bash scripts/deploy.sh production`.
 
 ## Hotfixes
 
 ```bash
 git switch main && git pull && git switch -c hotfix/login-loop
-# fix, push, PR → main (same checks + approval as a release), merge commit
+# fix, push, PR → main (same approval rule as a release), merge commit
 ```
 Afterwards, open a PR **`main` → `dev`** (merge commit) so the fix isn't lost on the
 next release.
 
-## Rollback
+## Checks before a PR
 
-*Actions → Deploy → Run workflow* (from `main`): choose `production` and a previous tag
-(e.g. `v0.1.0`). That ref is checked out on the server and migrated. Database migrations
-aren't reversed automatically. Every deploy takes a backup first
-(`sites/<site>/private/backups`).
+There's no CI server, so the author runs these in their bench/devcontainer:
 
-## What a deploy does (`.github/scripts/deploy.sh`, over SSH)
+```bash
+pre-commit run --all-files                    # ruff, eslint, prettier (once: pre-commit install)
+bench --site development.localhost run-tests --module sprint.tests.test_api
+bench --site development.localhost run-tests --module sprint.tests.test_automation
+```
+If you touched `frontend/src`, rebuild (inside the devcontainer) and commit
+`sprint/public/frontend` + `sprint/www/sprint.html` in the same PR. Servers never
+run `yarn build`; they use the committed assets.
 
-backup (DB + files) → maintenance mode on → checkout the exact commit →
-`bench setup requirements` → `bench migrate` (runs the `ensure_*` hooks) →
-`bench build --app sprint` → `bench restart` → maintenance off → HTTP health check
-(`/api/method/ping`). If any step fails, the code is restored to the previous
-commit automatically.
+## Deploying
 
-The frontend is **prebuilt and committed**, so servers never run `yarn build`. If you
-touch `frontend/src`, rebuild (inside the devcontainer) and commit
-`sprint/public/frontend` + `sprint/www/sprint.html` in the same PR. CI warns when they're stale.
+`scripts/deploy.sh` runs from your machine (Git Bash on Windows works) and drives the
+server over SSH:
 
-## One-time setup
+```bash
+bash scripts/deploy.sh staging              # deploys origin/dev
+bash scripts/deploy.sh production           # deploys origin/main
+bash scripts/deploy.sh production v0.1.0    # rollback to a tag
+```
 
-### Merge rules & repo settings
+It refuses code that isn't pushed, refuses production code that isn't on `main`, and
+asks you to type the environment name to confirm. On the server
+(`scripts/remote-deploy.sh`) it runs: backup (DB + files) → maintenance mode on →
+checkout the exact commit → `bench setup requirements` → `bench migrate` (runs the
+`ensure_*` hooks) → `bench build --app sprint` → `bench restart` → maintenance off →
+HTTP health check (`/api/method/ping`). If any step fails, the code goes back to the
+previous commit automatically. Database migrations aren't reversed; use the
+pre-deploy backup in `sites/<site>/private/backups` if needed.
+
+### One-time server setup
+1. Set up a production bench on the server (`bench setup production <user>`, see
+   `DEPLOYMENT.md`) with `apps/sprint` cloned from this repo. The repo is public, so a
+   plain https clone works.
+2. Make sure you can `ssh <user>@<server>` with a key.
+3. Create `.deploy/production.env` (and `.deploy/staging.env`) locally. The folder is
+   git-ignored:
+   ```bash
+   SSH_HOST=203.0.113.10
+   SSH_USER=frappe
+   BENCH_PATH=/home/frappe/frappe-bench
+   SITE_NAME=sprint.example.com
+   # optional: SSH_PORT=22  SSH_KEY=~/.ssh/sprint_deploy  WEB_PORT=8000
+   ```
+
+## Merge rules (admins)
+
+The rules live as JSON in `.github/rulesets/`. To change them, edit the JSON and run:
 ```bash
 gh auth login
-bash .github/rulesets/apply.sh          # idempotent; re-run after editing the JSON
+bash .github/rulesets/apply.sh          # idempotent
 ```
-This sets: rulesets for `main`, `dev` and `v*` tags; squash + merge-commit allowed
-(rebase off); auto-delete merged branches; the `staging` (dev, main) and `production`
-(main only, owner approval required) environments.
-
-### Turning on deploys (per server)
-1. On the server, set up a production bench (`bench setup production <user>`) with
-   `apps/sprint` cloned from this repo using a **read-only deploy key**.
-2. Create an SSH key pair for GitHub Actions and add the public key to the server user's
-   `~/.ssh/authorized_keys`.
-3. In *Settings → Environments → staging / production*, add **secrets**:
-
-   | Secret | Example |
-   |---|---|
-   | `SSH_HOST` | `203.0.113.10` |
-   | `SSH_USER` | `frappe` |
-   | `SSH_PRIVATE_KEY` | the private key from step 2 |
-   | `SSH_KNOWN_HOSTS` | output of `ssh-keyscan -p 22 203.0.113.10` |
-   | `BENCH_PATH` | `/home/frappe/frappe-bench` |
-   | `SITE_NAME` | `sprint.example.com` |
-
-   Optional environment **variables**: `SSH_PORT` (22), `WEB_PORT` (8000).
-4. In *Settings → Secrets and variables → Actions → Variables*, set
-   `STAGING_DEPLOY_ENABLED=true` and/or `PRODUCTION_DEPLOY_ENABLED=true`.
-   Until then, pushes still run CI and the deploy job is skipped.
-
-## Local checks
-
-```bash
-pre-commit install        # ruff, eslint, prettier on commit
-```
-Run the server tests in your bench (see `COMMANDS.md`) before opening a PR.
+Current rules:
+- `main`: PR only, 1 code-owner approval (admin bypass via PR only), merge commits only,
+  stale approvals dismissed on new pushes, conversations resolved, no force-push or delete.
+- `dev`: PR only, squash or merge commit, conversations resolved, no force-push or delete.
+- `v*` tags: can't be moved or deleted.
+- Repo: rebase-merge off, merged branches auto-deleted, GitHub Actions disabled.

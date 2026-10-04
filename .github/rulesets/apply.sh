@@ -33,22 +33,10 @@ for f in main-protect.json main-review.json dev.json release-tags.json; do
 	fi
 done
 
-echo "==> Environments"
-OWNER_ID="$(gh api "users/${REPO%%/*}" -q .id)"
-env_put() { # name, reviewers-json, branches...
-	local name="$1" reviewers="$2"; shift 2
-	printf '{"reviewers":%s,"prevent_self_review":false,"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}' "$reviewers" \
-		| gh api -X PUT "repos/$REPO/environments/$name" --input - --silent
-	local existing
-	existing="$(gh api "repos/$REPO/environments/$name/deployment-branch-policies" -q '.branch_policies[].name')"
-	for b in "$@"; do
-		grep -qx "$b" <<<"$existing" || gh api -X POST "repos/$REPO/environments/$name/deployment-branch-policies" \
-			-f name="$b" -f type=branch --silent
-	done
-	echo "    $name (branches: $*)"
-}
-env_put staging '[]' dev main
-env_put production "[{\"type\":\"User\",\"id\":$OWNER_ID}]" main
+echo "==> GitHub Actions: off (this repo uses no paid/automated CI)"
+gh api -X PUT "repos/$REPO/actions/permissions" -F enabled=false --silent
+for env in staging production; do
+	gh api -X DELETE "repos/$REPO/environments/$env" --silent 2>/dev/null && echo "    removed environment: $env" || true
+done
 
-echo "==> Done. Deploys stay off until you add the environment secrets and set the repo"
-echo "    variables STAGING_DEPLOY_ENABLED / PRODUCTION_DEPLOY_ENABLED to 'true' (see CONTRIBUTING.md)."
+echo "==> Done."

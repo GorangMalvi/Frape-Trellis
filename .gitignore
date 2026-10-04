@@ -12,3 +12,6 @@ node_modules/
 Thumbs.db
 .idea/
 *.swp
+
+# Deploy targets (server addresses, paths) — see scripts/deploy.sh
+.deploy/
