@@ -1,0 +1,86 @@
+# Sprint local development stack: one command starts everything.
+#
+#   docker compose up            start backend + frontend (first run builds the bench, ~5-10 min)
+#   docker compose up --build    same, and if app sources changed: deps, frontend build, migrate
+#   docker compose down          stop (data is kept in volumes; add -v to wipe it)
+#
+#   http://development.localhost:8000/sprint   app served by Frappe (built assets)
+#   http://development.localhost:8080/sprint   Vite dev server with live reload
+#   http://development.localhost:8000/desk     Frappe Desk — Administrator / admin
+#
+# The repo is bind-mounted into the bench as apps/sprint, so edits on the host
+# are live. Production is not deployed with this file (see CONTRIBUTING.md).
+name: sprint-dev
+
+x-dev-image: &dev-image
+  image: sprint-dev:latest
+  volumes:
+    # the bench (Frappe, virtualenv, sites) on the Linux filesystem — fast on Windows/macOS
+    - bench:/workspace/development
+    # this repo = the sprint app
+    - .:/workspace/development/frappe-bench/apps/sprint
+    # Linux-only node_modules, kept out of the host checkout
+    - node-modules:/workspace/development/frappe-bench/apps/sprint/frontend/node_modules
+  environment:
+    SITE_NAME: development.localhost
+    DB_ROOT_PASSWORD: "123"
+    ADMIN_PASSWORD: admin
+    SEED_DEMO: "1"          # load sprint/demo_data.json on first run
+    VITE_DEV: "1"           # also run the Vite live-reload dev server on :8080
+
+services:
+  mariadb:
+    image: docker.io/mariadb:11.8
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      MARIADB_ROOT_PASSWORD: "123"
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 30
+
+  redis-cache:
+    image: docker.io/redis:alpine
+
+  redis-queue:
+    image: docker.io/redis:alpine
+
+  # bench start: web (:8000), socketio, worker, scheduler + Vite dev server (:8080).
+  frappe:
+    <<: *dev-image
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+    container_name: devcontainer-frappe-1   # keeps the docker exec commands in CLAUDE.md/COMMANDS.md working
+    command: ["backend"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    ports:
+      - "8000:8000"   # web
+      - "9000:9000"   # socketio
+      - "8080:8080"   # Vite dev server (live reload)
+    extra_hosts:
+      # realtime (socketio) and the Vite proxy resolve the site name inside the container
+      - "development.localhost:127.0.0.1"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/method/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30m   # first run builds the bench
+
+volumes:
+  bench:
+  db:
+  node-modules:

@@ -25,7 +25,27 @@ automations); schema changes are idempotent `ensure_*` functions in `sprint/setu
 the `after_migrate` hook; never name a field `order`; Lucide icons only as `<LucideX />`
 template tags.
 
-## Setup
+## Quick start (Docker — recommended)
+
+Needs only Docker. From the repo root:
+
+```bash
+docker compose up -d            # first run builds a Frappe v16 bench + site + demo data (~10 min)
+docker compose up -d --build    # after pulling or editing: rebuilds frontend + bench migrate if sources changed
+docker compose down             # stop (data kept; `down -v` wipes it)
+```
+
+| URL | What |
+|---|---|
+| http://localhost:8000/sprint | the app (backend + built frontend) |
+| http://localhost:8080/sprint | Vite dev server with live reload (edits in `frontend/src` show instantly) |
+| http://localhost:8000/desk | Frappe Desk — `Administrator` / `admin` |
+
+`development.localhost` works in place of `localhost` too. The repo is mounted into the
+bench as `apps/sprint`, so backend edits reload live; `docker exec -it devcontainer-frappe-1 bash`
+gives a shell in the bench (`/workspace/development/frappe-bench`).
+
+## Setup (existing bench)
 
 Sprint is a Frappe app — it needs a working [bench](https://github.com/frappe/bench). The
 easiest path is the [frappe_docker devcontainer](https://github.com/frappe/frappe_docker/blob/main/docs/development.md);

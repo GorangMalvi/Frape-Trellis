@@ -7,6 +7,10 @@ ERPNext/HRMS/CRM, so we never install them).
 For contributors: this is how you stand up a local dev environment, load demo data,
 and start hacking.
 
+> **Shortcut:** `docker compose up -d` from the repo root does all of steps 1–6
+> automatically (see README → Quick start). The manual steps below are for an existing
+> frappe_docker checkout or a non-Docker bench.
+
 ---
 
 ## Prerequisites
