@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "autoname": "hash",
+ "creation": "2026-07-06 08:06:08.231353",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "automation_name",
+  "space",
+  "enabled",
+  "description",
+  "trigger_type",
+  "trigger_config",
+  "conditions",
+  "actions",
+  "webhook_secret",
+  "next_run",
+  "last_run",
+  "last_status",
+  "run_count",
+  "rr_index"
+ ],
+ "fields": [
+  {
+   "fieldname": "automation_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Automation Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "space",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Space",
+   "options": "SP Space",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "trigger_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Trigger Type",
+   "options": "card_created\nmoved_to_bucket\nfield_changed\nassignee_changed\ncomment_added\ndue_date_arrived\ndue_date_approaching\ncard_inactive\nscheduled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "trigger_config",
+   "fieldtype": "Long Text",
+   "label": "Trigger Config (JSON)"
+  },
+  {
+   "fieldname": "conditions",
+   "fieldtype": "Long Text",
+   "label": "Conditions (JSON)"
+  },
+  {
+   "fieldname": "actions",
+   "fieldtype": "Long Text",
+   "label": "Actions (JSON)"
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret"
+  },
+  {
+   "fieldname": "next_run",
+   "fieldtype": "Datetime",
+   "label": "Next Run"
+  },
+  {
+   "fieldname": "last_run",
+   "fieldtype": "Datetime",
+   "label": "Last Run"
+  },
+  {
+   "fieldname": "last_status",
+   "fieldtype": "Data",
+   "label": "Last Status"
+  },
+  {
+   "fieldname": "run_count",
+   "fieldtype": "Int",
+   "label": "Run Count"
+  },
+  {
+   "fieldname": "rr_index",
+   "fieldtype": "Int",
+   "label": "Round-robin Index"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-06 08:06:08.231353",
+ "modified_by": "Administrator",
+ "module": "Sprint",
+ "name": "SP Automation",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "automation_name",
+ "track_changes": 1
+}

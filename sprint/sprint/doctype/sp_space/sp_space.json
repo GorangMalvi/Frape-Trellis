@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "autoname": "field:target_doctype",
+ "creation": "2026-06-25 23:14:56.581191",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "target_doctype",
+  "label",
+  "icon",
+  "color",
+  "sort_order",
+  "cb1",
+  "title_field",
+  "bucket_field",
+  "assignee_field",
+  "body_field",
+  "parent_field",
+  "badge_field",
+  "chip_fields",
+  "chip_options",
+  "space_type",
+  "ticket_members",
+  "read_access",
+  "write_access",
+  "access_users",
+  "due_field",
+  "dashboard_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Target DocType",
+   "options": "DocType",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label",
+   "reqd": 1
+  },
+  {
+   "fieldname": "icon",
+   "fieldtype": "Data",
+   "label": "Icon"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Data",
+   "label": "Color"
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Order"
+  },
+  {
+   "default": "Task",
+   "fieldname": "space_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Space Type",
+   "options": "Task\nTicket"
+  },
+  {
+   "default": "All",
+   "fieldname": "read_access",
+   "fieldtype": "Select",
+   "label": "View Access",
+   "options": "All\nSelected Users"
+  },
+  {
+   "default": "All",
+   "fieldname": "write_access",
+   "fieldtype": "Select",
+   "label": "Edit Access",
+   "options": "All\nSelected Users"
+  },
+  {
+   "fieldname": "access_users",
+   "fieldtype": "Table",
+   "label": "Space Access Users",
+   "options": "SP Space Access"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "title",
+   "fieldname": "title_field",
+   "fieldtype": "Data",
+   "label": "Title Field"
+  },
+  {
+   "default": "bucket",
+   "fieldname": "bucket_field",
+   "fieldtype": "Data",
+   "label": "Bucket Field"
+  },
+  {
+   "fieldname": "assignee_field",
+   "fieldtype": "Data",
+   "label": "Assignee Field"
+  },
+  {
+   "fieldname": "body_field",
+   "fieldtype": "Data",
+   "label": "Body Field"
+  },
+  {
+   "default": "parent_task",
+   "fieldname": "parent_field",
+   "fieldtype": "Data",
+   "label": "Parent (Subtask) Field"
+  },
+  {
+   "default": "sprint_points",
+   "fieldname": "badge_field",
+   "fieldtype": "Data",
+   "label": "Badge Field"
+  },
+  {
+   "fieldname": "chip_fields",
+   "fieldtype": "Data",
+   "label": "Chip Fields (comma-sep)"
+  },
+  {
+   "fieldname": "chip_options",
+   "fieldtype": "Long Text",
+   "label": "Chip Options (JSON)"
+  },
+  {
+   "fieldname": "ticket_members",
+   "fieldtype": "Table",
+   "label": "Ticket Members",
+   "options": "SP Ticket Member"
+  },
+  {
+   "fieldname": "due_field",
+   "fieldtype": "Data",
+   "label": "Due Date Field"
+  },
+  {
+   "fieldname": "dashboard_json",
+   "fieldtype": "Long Text",
+   "label": "Dashboard (JSON)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-07 18:01:15.503364",
+ "modified_by": "Administrator",
+ "module": "Sprint",
+ "name": "SP Space",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "label",
+ "track_changes": 1
+}

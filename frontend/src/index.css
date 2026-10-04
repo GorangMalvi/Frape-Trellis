@@ -1,0 +1,612 @@
+@import 'frappe-ui/style.css';
+
+/* ============================================================
+   Sprint design tokens — "Apple‑light".
+   Light, airy surfaces. Frosted glass materials (vibrancy).
+   One near‑black ink at varying alpha, Apple‑system fills for
+   recessed surfaces, one blue accent. Separation comes from
+   material + soft diffuse depth + whitespace, not 1px borders.
+   ============================================================ */
+:root {
+  /* native controls (select option lists, date pickers, scrollbars) follow the theme */
+  color-scheme: light;
+
+  /* surfaces */
+  --sp-ground: #f5f5f7;       /* canvas (Apple section gray) */
+  --sp-surface: #ffffff;      /* cards, modals, popovers */
+  --sp-ink: 29 29 31;         /* #1d1d1f — use as rgb(var(--sp-ink) / .x) */
+
+  /* Apple system‑gray fills — the hallmark of recessed iOS/macOS surfaces */
+  --sp-fill: rgb(118 118 128 / 0.08);
+  --sp-fill-hover: rgb(118 118 128 / 0.12);
+  --sp-fill-strong: rgb(118 118 128 / 0.16);
+
+  /* accent (Apple system blue) — derived from an RGB triplet so hover/press/
+     tint recompute together; the dark theme brightens it below. */
+  --sp-accent-rgb: 0 113 227;
+  --sp-accent-hover-rgb: 0 119 237;
+  --sp-accent-press-rgb: 0 103 207;
+  --sp-accent: rgb(var(--sp-accent-rgb));
+  --sp-accent-hover: rgb(var(--sp-accent-hover-rgb));
+  --sp-accent-press: rgb(var(--sp-accent-press-rgb));
+  --sp-accent-tint: rgb(var(--sp-accent-rgb) / 0.1);
+
+  /* glass / vibrancy */
+  --sp-glass: rgb(255 255 255 / 0.72);
+  --sp-glass-strong: rgb(255 255 255 / 0.85);
+
+  /* hairline (used sparingly) */
+  --sp-line: rgb(0 0 0 / 0.08);
+
+  /* soft, diffuse elevation */
+  --sp-e1: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 12px rgb(0 0 0 / 0.05);
+  --sp-e1-hover: 0 2px 6px rgb(0 0 0 / 0.06), 0 14px 30px rgb(0 0 0 / 0.10);
+  --sp-e2: 0 4px 24px rgb(0 0 0 / 0.10), 0 1px 3px rgb(0 0 0 / 0.06);
+  --sp-e3: 0 24px 64px -12px rgb(0 0 0 / 0.30), 0 8px 24px rgb(0 0 0 / 0.10);
+}
+
+/* ============================================================
+   Dark mode — Apple "elevated dark". Near‑black canvas, system‑gray
+   fills lifted for contrast, light ink, vibrancy on dark glass.
+   frappe‑ui's own semantic colours flip via the same [data-theme]
+   attribute, so its components track this automatically.
+   ============================================================ */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --sp-ground: #121215;
+  --sp-surface: #1e1e22;
+  --sp-ink: 240 240 245;
+
+  --sp-fill: rgb(140 140 150 / 0.16);
+  --sp-fill-hover: rgb(140 140 150 / 0.24);
+  --sp-fill-strong: rgb(140 140 150 / 0.32);
+
+  --sp-glass: rgb(30 30 34 / 0.72);
+  --sp-glass-strong: rgb(30 30 34 / 0.82);
+
+  --sp-line: rgb(255 255 255 / 0.1);
+
+  /* brighter blue accent for contrast on dark surfaces */
+  --sp-accent-rgb: 10 132 255;
+  --sp-accent-hover-rgb: 40 150 255;
+  --sp-accent-press-rgb: 0 118 235;
+  --sp-accent-tint: rgb(var(--sp-accent-rgb) / 0.22);
+
+  --sp-e1: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.4);
+  --sp-e1-hover: 0 2px 6px rgb(0 0 0 / 0.5), 0 14px 30px rgb(0 0 0 / 0.55);
+  --sp-e2: 0 4px 24px rgb(0 0 0 / 0.55), 0 1px 3px rgb(0 0 0 / 0.4);
+  --sp-e3: 0 30px 70px -12px rgb(0 0 0 / 0.75), 0 8px 24px rgb(0 0 0 / 0.5);
+}
+/* in dark, the card/popover hairline reads as light, not black */
+[data-theme='dark'] .sp-card {
+  box-shadow: var(--sp-e1), inset 0 0 0 0.5px rgb(255 255 255 / 0.07);
+}
+[data-theme='dark'] .sp-card:hover {
+  box-shadow: var(--sp-e1-hover), inset 0 0 0 0.5px rgb(255 255 255 / 0.1);
+}
+[data-theme='dark'] .sp-pop {
+  box-shadow: var(--sp-e2), inset 0 0 0 0.5px rgb(255 255 255 / 0.09);
+}
+/* keep the rich‑text (TipTap/Tailwind prose) body readable on dark surfaces */
+[data-theme='dark'] .prose,
+[data-theme='dark'] .ProseMirror {
+  --tw-prose-body: rgb(var(--sp-ink) / 0.82);
+  --tw-prose-headings: rgb(var(--sp-ink) / 0.95);
+  --tw-prose-bold: rgb(var(--sp-ink) / 0.95);
+  --tw-prose-bullets: rgb(var(--sp-ink) / 0.4);
+  --tw-prose-quotes: rgb(var(--sp-ink) / 0.7);
+  --tw-prose-quote-borders: var(--sp-line);
+  --tw-prose-code: rgb(var(--sp-ink) / 0.9);
+  --tw-prose-links: var(--sp-accent);
+  --tw-prose-hr: var(--sp-line);
+  color: rgb(var(--sp-ink) / 0.82);
+}
+
+/* San Francisco everywhere on Apple devices; Inter as the cross‑platform
+   fallback. Overrides frappe‑ui's `html { font-family: InterVar }` (its rule
+   lives in @layer base, so this un‑layered rule wins). */
+html,
+body,
+button,
+input,
+textarea,
+select,
+.text-base,
+[class*='text-ink'] {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+html,
+body {
+  background: var(--sp-ground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
+}
+
+/* frappe-ui popovers (Autocomplete/Link dropdowns, etc.) teleport to <body>
+   with no z-index — lift them above the task modal (z-40) and dialogs. */
+.PopoverContent {
+  z-index: 100;
+}
+
+/* Native controls render as plain boxes so the dark color-scheme doesn't paint
+   its own borders/chrome (which looked boxy). Our utilities supply any border
+   or fill. Checkboxes/radios keep their native rendering. */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* @tailwindcss/forms forces a white background + #999 border on every text
+   control, which made unstyled inputs invisible (white-on-white) in dark mode.
+   Re-skin its defaults to theme-aware values. The :where() keeps specificity
+   low so .sp-field / .sp-prop / bg-* / border utilities still win, and this
+   rule loads after the forms base so it wins the same-specificity tie. */
+input:where(:not([type='checkbox'], [type='radio'])),
+textarea,
+select {
+  background-color: transparent;
+  border-color: var(--sp-line);
+  color: rgb(var(--sp-ink) / 0.9);
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgb(var(--sp-ink) / 0.4);
+}
+
+/* ground / surfaces */
+.sp-ground { background: var(--sp-ground); }
+.sp-surface { background: var(--sp-surface); }
+
+/* frosted glass material (sidebar, sticky headers) */
+.sp-glass {
+  background: var(--sp-glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+.sp-glass-strong {
+  background: var(--sp-glass-strong);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* ------------------------------------------------------------------ */
+/* card body editor — Notion-style borderless canvas                   */
+/* quiet at rest, faint fill on hover, gently lifted while writing     */
+.sp-body-editor {
+  background: transparent;
+}
+.sp-body-editor:hover {
+  background: var(--sp-fill);
+}
+.sp-body-editor:focus-within {
+  background: var(--sp-surface);
+  box-shadow: inset 0 0 0 1px var(--sp-line), var(--sp-e1);
+}
+
+/* typography inside the body canvas */
+.sp-body-editor .ProseMirror h1,
+.sp-body-editor .ProseMirror h2,
+.sp-body-editor .ProseMirror h3 {
+  letter-spacing: -0.02em;
+  margin-top: 1.1em;
+  margin-bottom: 0.35em;
+}
+.sp-body-editor .ProseMirror blockquote {
+  border-left: 3px solid var(--sp-accent);
+  background: var(--sp-accent-tint);
+  border-radius: 0 8px 8px 0;
+  padding: 0.35rem 0.85rem;
+  font-style: normal;
+}
+.sp-body-editor .ProseMirror code {
+  background: var(--sp-fill-strong);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+}
+.sp-body-editor .ProseMirror pre {
+  background: var(--sp-fill);
+  border: 0.5px solid var(--sp-line);
+  border-radius: 10px;
+}
+.sp-body-editor .ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+}
+.sp-body-editor .ProseMirror hr {
+  border-top: 1px solid var(--sp-line);
+  margin: 1.4em 0;
+}
+/* task-list checkboxes in the accent colour */
+.sp-body-editor .ProseMirror ul[data-type='taskList'] input[type='checkbox'] {
+  accent-color: var(--sp-accent);
+  width: 15px;
+  height: 15px;
+  margin-top: 0.2em;
+}
+.sp-body-editor .ProseMirror ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: rgb(var(--sp-ink) / 0.45);
+  text-decoration: line-through;
+}
+
+/* modal / drawer backdrop — darker in dark mode so overlays still read */
+.sp-scrim { background: rgb(0 0 0 / 0.3); }
+[data-theme='dark'] .sp-scrim { background: rgb(0 0 0 / 0.55); }
+
+/* elevated card — white, soft depth + a whisper of a hairline */
+.sp-card {
+  background: var(--sp-surface);
+  border-radius: 16px;
+  box-shadow: var(--sp-e1), inset 0 0 0 0.5px rgb(0 0 0 / 0.04);
+  transition: box-shadow 0.2s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sp-card:hover {
+  box-shadow: var(--sp-e1-hover), inset 0 0 0 0.5px rgb(0 0 0 / 0.04);
+  transform: translateY(-1px);
+}
+
+/* recessed column — Apple system‑gray fill, generous radius */
+.sp-col {
+  background: var(--sp-fill);
+  border-radius: 18px;
+}
+.sp-pop {
+  background: var(--sp-surface);
+  border-radius: 16px;
+  box-shadow: var(--sp-e2), inset 0 0 0 0.5px rgb(0 0 0 / 0.05);
+}
+.sp-modal {
+  background: var(--sp-surface);
+  border-radius: 22px;
+  box-shadow: var(--sp-e3);
+}
+
+/* hairline divider */
+.sp-hair { border-color: var(--sp-line); }
+
+/* ink text scale (one colour, varying alpha) */
+.sp-ink-1 { color: rgb(var(--sp-ink) / 0.92); }
+.sp-ink-2 { color: rgb(var(--sp-ink) / 0.6); }
+.sp-ink-3 { color: rgb(var(--sp-ink) / 0.42); }
+.sp-ink-4 { color: rgb(var(--sp-ink) / 0.3); }
+
+/* subtle, borderless control (toolbar buttons, selects) */
+.sp-control {
+  border-radius: 10px;
+  color: rgb(var(--sp-ink) / 0.6);
+  background: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sp-control:hover {
+  background: var(--sp-fill);
+  color: rgb(var(--sp-ink) / 0.92);
+}
+.sp-control-active {
+  background: var(--sp-fill-strong);
+  color: rgb(var(--sp-ink) / 0.92);
+}
+
+.sp-space-icon {
+  color: #fff;
+  font-weight: 700;
+  filter: saturate(1.35) brightness(1.08);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.28);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.18),
+    0 2px 8px rgb(0 0 0 / 0.12);
+}
+.sp-space-icon-choice {
+  color: rgb(var(--sp-ink) / 0.92);
+  filter: saturate(1.35) brightness(1.08);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.16);
+  box-shadow: inset 0 0 0 0.5px rgb(var(--sp-ink) / 0.08);
+}
+.sp-space-icon-choice-active {
+  background: var(--sp-accent-tint);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--sp-accent-rgb) / 0.58),
+    0 2px 10px rgb(var(--sp-accent-rgb) / 0.18);
+}
+.sp-sidebar .sp-ink-2 {
+  color: rgb(var(--sp-ink) / 0.78);
+}
+.sp-sidebar .sp-ink-3 {
+  color: rgb(var(--sp-ink) / 0.62);
+}
+.sp-sidebar .sp-ink-4 {
+  color: rgb(var(--sp-ink) / 0.5);
+}
+.sp-sidebar .sp-uppercase {
+  color: rgb(var(--sp-ink) / 0.58);
+}
+.sp-sidebar .sp-display {
+  color: rgb(var(--sp-ink) / 0.96);
+}
+
+/* faint filled chip for grouping controls */
+.sp-chip {
+  background: var(--sp-fill);
+  border-radius: 10px;
+}
+
+/* filled form control (filter rows, dialogs) — themes correctly in dark */
+.sp-field {
+  border-radius: 10px;
+  background: var(--sp-fill);
+  color: rgb(var(--sp-ink) / 0.9);
+  font-size: 0.875rem;
+  padding: 0.375rem 0.6rem;
+  border: 1px solid var(--sp-line);
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.sp-field::placeholder { color: rgb(var(--sp-ink) / 0.4); }
+.sp-field:hover { background: var(--sp-fill-hover); }
+.sp-field:focus,
+.sp-field:focus-visible {
+  outline: none;
+  box-shadow: none;
+  background: var(--sp-fill-hover);
+  border-color: var(--sp-accent);
+}
+select.sp-field { padding-right: 1.5rem; }
+
+/* primary blue button (Apple solid) */
+.sp-btn-primary {
+  background: var(--sp-accent);
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.sp-btn-primary:hover { background: var(--sp-accent-hover); }
+.sp-btn-primary:active { background: var(--sp-accent-press); transform: scale(0.98); }
+.sp-btn-primary:disabled { opacity: 0.45; pointer-events: none; }
+
+/* segmented‑control active pill — lifted in light, lighter fill in dark */
+.sp-seg-active {
+  background: var(--sp-surface);
+  box-shadow: var(--sp-e1);
+}
+[data-theme='dark'] .sp-seg-active {
+  background: rgb(255 255 255 / 0.14);
+  box-shadow: none;
+}
+
+/* colour swatch (bucket colour picker) — ring with a ground gap when active */
+.sp-swatch {
+  border-radius: 9999px;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.sp-swatch:hover { transform: scale(1.12); }
+.sp-swatch-active {
+  box-shadow: 0 0 0 2px var(--sp-ground), 0 0 0 4px currentColor;
+}
+
+/* tighter optical tracking for display headings */
+.sp-display {
+  letter-spacing: -0.022em;
+  font-feature-settings: 'ss01';
+}
+
+.sp-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(var(--sp-ink) / 0.4);
+}
+
+/* numerals align in columns */
+.sp-tnum { font-variant-numeric: tabular-nums; }
+
+/* thin, unobtrusive scrollbars */
+.sp-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+.sp-scroll::-webkit-scrollbar-thumb { background: rgb(var(--sp-ink) / 0.14); border-radius: 9999px; }
+.sp-scroll::-webkit-scrollbar-thumb:hover { background: rgb(var(--sp-ink) / 0.26); }
+.sp-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* skeleton shimmer */
+@keyframes sp-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.sp-skeleton {
+  background: linear-gradient(90deg, rgb(var(--sp-ink) / 0.05) 25%, rgb(var(--sp-ink) / 0.09) 37%, rgb(var(--sp-ink) / 0.05) 63%);
+  background-size: 800px 100%;
+  animation: sp-shimmer 1.3s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* sortable-js drag affordances */
+.sp-ghost { opacity: 0.35; }
+.sp-drag { transform: rotate(1.5deg) scale(1.02); cursor: grabbing; box-shadow: var(--sp-e2); }
+
+/* transitions — Apple spring easing */
+.sp-slide-enter-active, .sp-slide-leave-active { transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+.sp-slide-enter-from, .sp-slide-leave-to { transform: translateX(100%); }
+.sp-fade-enter-active, .sp-fade-leave-active { transition: opacity 0.22s ease; }
+.sp-fade-enter-from, .sp-fade-leave-to { opacity: 0; }
+.sp-pop-enter-active { transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.22s ease; }
+.sp-pop-enter-from { transform: scale(0.96) translateY(8px); opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sp-card, .sp-card:hover { transition: none; transform: none; }
+  .sp-skeleton { animation: none; }
+  .sp-pop-enter-active, .sp-slide-enter-active, .sp-slide-leave-active,
+  .sp-slide-up-enter-active, .sp-slide-up-leave-active { transition: opacity 0.18s ease; }
+  .sp-pop-enter-from { transform: none; }
+  .sp-slide-up-enter-from, .sp-slide-up-leave-to { transform: none; }
+  .sp-drawer { transition: none; }
+}
+
+/* ======================================================================
+ * MOBILE  (~< 768px, matches Tailwind `md:`) + touch affordances
+ * ==================================================================== */
+
+html { -webkit-tap-highlight-color: transparent; }
+
+/* Hover-revealed actions (opacity-0 … group-hover:opacity-100) tagged with
+   .sp-reveal become always-visible on touch devices, where hover never fires. */
+@media (hover: none), (pointer: coarse) {
+  .sp-reveal { opacity: 1; }
+}
+
+/* safe-area inset (home indicator) — viewport-fit=cover required.
+   CAUTION: defined after the Tailwind utilities, so it beats a pb utility on
+   the same element and zeroes it on non-notch devices. Only use on elements
+   with no bottom-padding utility; otherwise use an additive arbitrary class
+   like pb-[calc(env(safe-area-inset-bottom)+0.75rem)]. */
+.sp-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* off-canvas sidebar drawer (App.vue toggles the translate) */
+.sp-drawer { transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+
+/* bottom-sheet transition */
+.sp-slide-up-enter-active, .sp-slide-up-leave-active { transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+.sp-slide-up-enter-from, .sp-slide-up-leave-to { transform: translateY(100%); }
+
+/* Full-screen sheet on phones — pair with .sp-modal on a dialog panel.
+   Must live AFTER .sp-modal in this file: .sp-modal is defined after the
+   Tailwind utilities layer, so bare max-md: overrides would lose the tie.
+   height:100% fills the fixed inset-0 scrim (sized against the dynamic
+   viewport), sidestepping 100dvh/URL-bar issues. */
+@media (max-width: 767.98px) {
+  .sp-modal-sheet {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    border-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ======================================================================
+ * LIQUID GLASS THEME  ([data-glass])
+ * An additive translucent skin over the dark base (set alongside
+ * data-theme='dark' by applyTheme). Every surface becomes glass material
+ * (translucent tint + backdrop-filter on chrome/overlays, tint-only on
+ * content for perf), floating over a full-bleed photographic backdrop.
+ * Real SVG refraction is layered on the hero panels via the v-glass
+ * directive (which sets its own inline backdrop-filter, overriding these).
+ * ==================================================================== */
+
+/* full-bleed backdrop the glass refracts (element lives in App.vue) */
+.sp-app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* soften + veil so translucent content stays legible over it */
+  filter: blur(6px) saturate(1.12);
+  transform: scale(1.06); /* hide blur-bleed at the edges */
+}
+.sp-app-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(10 10 16 / 0.5) 0%, rgb(10 10 16 / 0.62) 100%);
+}
+
+[data-glass] {
+  /* brighter hairline reads as a glass rim; keep dark-base ink */
+  --sp-line: rgb(255 255 255 / 0.16);
+}
+/* let the backdrop show through the app root */
+[data-glass] .sp-ground { background: transparent; }
+
+/* --- chrome + overlays: translucent + real backdrop blur ------------- */
+[data-glass] .sp-glass,
+[data-glass] .sp-glass-strong {
+  background: rgb(24 24 30 / 0.44);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.26);
+}
+[data-glass] .sp-glass-strong { background: rgb(24 24 30 / 0.55); }
+
+[data-glass] .sp-pop {
+  background: rgb(30 30 38 / 0.6);
+  -webkit-backdrop-filter: saturate(175%) blur(18px);
+  backdrop-filter: saturate(175%) blur(18px);
+  box-shadow: var(--sp-e2), inset 0 0 0 0.5px rgb(255 255 255 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.22);
+}
+[data-glass] .sp-modal {
+  background: rgb(24 24 32 / 0.5);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  box-shadow: var(--sp-e3), inset 0 0 0 0.5px rgb(255 255 255 / 0.22),
+    inset 0 1.5px 0 rgb(255 255 255 / 0.3);
+}
+/* lighter scrim so the backdrop stays visible behind dialogs */
+[data-glass] .sp-scrim { background: rgb(0 0 0 / 0.32); }
+
+/* --- content: translucent TINT ONLY (no per-element blur → fast) ----- */
+[data-glass] .sp-card {
+  background: rgb(28 28 36 / 0.55);
+  box-shadow: var(--sp-e1), inset 0 0 0 0.5px rgb(255 255 255 / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+[data-glass] .sp-card:hover {
+  background: rgb(34 34 44 / 0.62);
+  box-shadow: var(--sp-e1-hover), inset 0 0 0 0.5px rgb(255 255 255 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+[data-glass] .sp-col { background: rgb(18 18 24 / 0.28); }
+
+/* --- controls / inputs / bits --------------------------------------- */
+[data-glass] .sp-chip { background: rgb(255 255 255 / 0.08); }
+[data-glass] .sp-field {
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.22);
+}
+[data-glass] .sp-field:hover { background: rgb(255 255 255 / 0.12); }
+[data-glass] .sp-field:focus,
+[data-glass] .sp-field:focus-visible {
+  background: rgb(255 255 255 / 0.14);
+  border-color: var(--sp-accent);
+}
+[data-glass] .sp-seg-active {
+  background: rgb(255 255 255 / 0.2);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.25);
+}
+
+/* --- ink: lift contrast over the busy backdrop ----------------------- */
+[data-glass] .sp-ink-1 { color: rgb(var(--sp-ink) / 0.96); }
+[data-glass] .sp-ink-2 { color: rgb(var(--sp-ink) / 0.74); }
+[data-glass] .sp-ink-3 { color: rgb(var(--sp-ink) / 0.56); }
+
+/* glass theme on phones: the fixed photographic backdrop's heavy blur janks
+   mobile GPUs — soften it (the veil gradient keeps content legible). Lives
+   after the base .sp-app-backdrop rule so it wins the cascade. */
+@media (max-width: 767.98px) {
+  .sp-app-backdrop { filter: blur(3px) saturate(1.12); }
+}
+
+/* --- accessibility: drop the glass for reduced-transparency ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  .sp-app-backdrop { display: none; }
+  [data-glass] .sp-ground { background: var(--sp-ground); }
+  [data-glass] .sp-glass,
+  [data-glass] .sp-glass-strong,
+  [data-glass] .sp-pop,
+  [data-glass] .sp-modal {
+    background: var(--sp-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-glass] .sp-card { background: var(--sp-surface); }
+  [data-glass] .sp-col { background: var(--sp-fill); }
+}
