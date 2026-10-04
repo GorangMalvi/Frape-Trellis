@@ -1,4 +1,5 @@
-# Owners are auto-requested for review on every PR.
+# Owners are auto-requested for review on every PR. Only @GorangMalvi can merge
+# into main/dev (ruleset .github/rulesets/maintainer-merges.json).
 # Add teammates here (e.g. "/frontend/ @someone") as the team grows.
 *                    @GorangMalvi
 

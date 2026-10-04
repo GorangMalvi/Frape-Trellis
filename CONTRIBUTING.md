@@ -16,6 +16,17 @@ GitHub Actions / paid CI**: checks run on your machine and deploys are one comma
 `dev` is the default branch, so new PRs target it automatically. Neither `main` nor
 `dev` can be force-pushed or deleted.
 
+## Who reviews and merges
+
+**Only the maintainer, @GorangMalvi (repo admin), can merge into `main` or `dev`.**
+Collaborators push their own branches and open PRs. The merge button is blocked for them.
+
+- **Others' PRs:** @GorangMalvi is the code owner, so review is requested from him
+  automatically. He reviews (approve / request changes) and merges.
+- **His own PRs:** GitHub never lets an author *approve* their own PR. He can still
+  review his diff and leave comments, then merges with **"Merge without waiting for
+  requirements to be met"** (admin bypass), still only through a PR.
+
 ## Everyday flow
 
 ```bash
@@ -119,5 +130,7 @@ Current rules:
 - `main`: PR only, 1 code-owner approval (admin bypass via PR only), merge commits only,
   stale approvals dismissed on new pushes, conversations resolved, no force-push or delete.
 - `dev`: PR only, squash or merge commit, conversations resolved, no force-push or delete.
+- `main` + `dev`: only the repo admin can update them, and only by merging a PR
+  (`maintainer-merges.json`). Collaborators with write access can't merge.
 - `v*` tags: can't be moved or deleted.
 - Repo: rebase-merge off, merged branches auto-deleted, GitHub Actions disabled.

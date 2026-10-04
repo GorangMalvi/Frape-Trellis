@@ -23,7 +23,7 @@ gh api -X PATCH "repos/$REPO" --silent \
 	-f merge_commit_message=PR_BODY
 
 echo "==> Rulesets"
-for f in main-protect.json main-review.json dev.json release-tags.json; do
+for f in main-protect.json main-review.json dev.json maintainer-merges.json release-tags.json; do
 	name="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$f','utf8')).name)")"
 	id="$(gh api "repos/$REPO/rulesets" --paginate -q ".[] | select(.name == \"$name\") | .id")"
 	if [ -n "$id" ]; then
