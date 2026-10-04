@@ -1,0 +1,8 @@
+# Normalize line endings: this app runs on Linux (bench/devcontainer), and
+# shell scripts piped to bash break with CRLF.
+* text=auto eol=lf
+*.sh text eol=lf
+
+# Prebuilt frontend output: don't diff/merge minified bundles line by line.
+sprint/public/frontend/** -diff linguist-generated=true
+*.map binary

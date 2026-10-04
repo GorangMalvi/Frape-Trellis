@@ -90,6 +90,10 @@ frontend/                # Vue 3 + frappe-ui SPA (Vite, Tailwind)
 
 ## Contributing
 
+Branching, merge rules, CI/CD, releases and rollback are in **`CONTRIBUTING.md`**.
+In short: branch from `dev` → PR (CI must pass) → squash-merge to `dev` (deploys to staging)
+→ release PR `dev` → `main` (approval, merge commit; deploys to production).
+
 `pre-commit` handles formatting/linting (ruff, eslint, prettier, pyupgrade):
 
 ```bash

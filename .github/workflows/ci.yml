@@ -1,0 +1,145 @@
+name: CI
+
+# Runs on every PR into dev/main (these checks are required by the branch rulesets),
+# and is reused by deploy.yml so nothing ships without passing the same gate.
+on:
+  pull_request:
+    branches: [dev, main]
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.14.10" # keep in step with .pre-commit-config.yaml
+          args: check
+      - name: Check Python syntax, JSON, TOML and YAML
+        run: |
+          python3 - <<'EOF'
+          import ast, json, pathlib, sys, tomllib
+          bad = []
+          for p in pathlib.Path(".").rglob("*"):
+              if any(part in {".git", "node_modules"} for part in p.parts) or not p.is_file():
+                  continue
+              try:
+                  if p.suffix == ".py":
+                      ast.parse(p.read_text(encoding="utf-8"), filename=str(p))
+                  elif p.suffix == ".json":
+                      json.loads(p.read_text(encoding="utf-8"))
+                  elif p.suffix == ".toml":
+                      tomllib.loads(p.read_text(encoding="utf-8"))
+              except Exception as e:
+                  bad.append(f"{p}: {e}")
+          print("\n".join(bad) or "all files parse")
+          sys.exit(1 if bad else 0)
+          EOF
+      - name: Check for merge-conflict markers
+        run: |
+          if git grep -nE '^(<<<<<<<|>>>>>>>) ' -- ':!*.md'; then
+            echo "::error::Merge-conflict markers found"; exit 1
+          fi
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+      - name: Committed assets up to date?
+        working-directory: .
+        run: |
+          # The repo ships prebuilt assets (production does not run yarn build).
+          # Warn when frontend/src changed but sprint/public/frontend was not rebuilt.
+          if [ -n "$(git status --porcelain -- sprint/public/frontend sprint/www/sprint.html)" ]; then
+            echo "::warning title=Stale frontend build::Committed assets in sprint/public/frontend differ from a fresh build. Rebuild (yarn build) and commit the output before merging to main."
+            git status --short -- sprint/public/frontend sprint/www/sprint.html | head -20
+          fi
+
+  server-tests:
+    name: Server tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=20
+      redis-cache:
+        image: redis:alpine
+        ports:
+          - 13000:6379
+      redis-queue:
+        image: redis:alpine
+        ports:
+          - 11000:6379
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sprint-src
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install system packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mariadb-client
+      - name: Configure MariaDB
+        run: |
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+      - name: Init bench (Frappe v16)
+        run: |
+          pip install frappe-bench
+          bench init --skip-redis-config-generation --skip-assets \
+            --frappe-branch version-16 --python "$(which python)" ~/frappe-bench
+        env:
+          CI: "Yes"
+      - name: Install Sprint on a test site
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench get-app --skip-assets sprint "$GITHUB_WORKSPACE/sprint-src"
+          bench setup requirements --dev
+          bench new-site test_site \
+            --db-root-password root --admin-password admin \
+            --db-host 127.0.0.1 --db-port 3306 \
+            --mariadb-user-host-login-scope='%'
+          bench --site test_site install-app sprint
+          bench --site test_site migrate
+          bench --site test_site set-config allow_tests true
+        env:
+          CI: "Yes"
+      - name: Run tests
+        working-directory: /home/runner/frappe-bench
+        run: bench --site test_site run-tests --app sprint
+        env:
+          CI: "Yes"

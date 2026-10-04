@@ -127,6 +127,10 @@ docker exec -w /workspace/development/frappe-bench/apps/sprint/frontend devconta
 ---
 
 ## Production (optional — self-hosting your own instance)
+> **Automated deploys:** once a server is set up as below, GitHub Actions deploys `dev` → staging
+> and `main` → production over SSH (backup, migrate, restart, health check, auto-rollback).
+> See **`CONTRIBUTING.md` → One-time setup**.
+
 Same as steps 1–5 on a server, with these changes:
 - **Private repo:** use a read-only **SSH deploy key** for the clone/get-app — never a PAT.
 - **Skip the build spike:** the repo commits prebuilt frontend assets, so on a small box

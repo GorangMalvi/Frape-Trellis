@@ -1,0 +1,96 @@
+name: Deploy
+
+# push to dev  -> CI -> staging     (if vars.STAGING_DEPLOY_ENABLED == 'true')
+# push to main -> CI -> production  (if vars.PRODUCTION_DEPLOY_ENABLED == 'true')
+# manual run   -> deploy any ref (branch/tag/SHA) to either environment, e.g. a rollback.
+#
+# Each GitHub Environment (staging, production) holds its own secrets:
+#   SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, SSH_KNOWN_HOSTS, BENCH_PATH, SITE_NAME
+# and optional vars: SSH_PORT (default 22), WEB_PORT (default 8000).
+# Add "Required reviewers" on the production environment for a manual approval gate.
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        required: true
+      ref:
+        description: Branch, tag or SHA to deploy (e.g. v1.2.0 to roll back)
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy to ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
+    needs: ci
+    # Run after a green CI on push, or straight away for a manual (re)deploy.
+    if: >-
+      !cancelled() && !failure() &&
+      (
+        (github.event_name == 'workflow_dispatch' && (
+          (inputs.environment == 'production' && vars.PRODUCTION_DEPLOY_ENABLED == 'true') ||
+          (inputs.environment == 'staging' && vars.STAGING_DEPLOY_ENABLED == 'true'))) ||
+        (github.event_name == 'push' && github.ref_name == 'main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true') ||
+        (github.event_name == 'push' && github.ref_name == 'dev' && vars.STAGING_DEPLOY_ENABLED == 'true')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
+    # Never run two deploys to the same environment at once; queue instead of cancelling.
+    concurrency:
+      group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
+
+      - name: Resolve commit
+        id: ref
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy ${{ steps.ref.outputs.sha }}
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ vars.SSH_PORT || '22' }}
+          BENCH_PATH: ${{ secrets.BENCH_PATH }}
+          SITE_NAME: ${{ secrets.SITE_NAME }}
+          WEB_PORT: ${{ vars.WEB_PORT || '8000' }}
+          DEPLOY_REF: ${{ steps.ref.outputs.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" \
+            "BENCH_PATH='$BENCH_PATH' SITE_NAME='$SITE_NAME' DEPLOY_REF='$DEPLOY_REF' WEB_PORT='$WEB_PORT' bash -s" \
+            < .github/scripts/deploy.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deploy ${{ job.status }}"
+            echo "- Environment: \`${{ github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging') }}\`"
+            echo "- Commit: \`${{ steps.ref.outputs.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

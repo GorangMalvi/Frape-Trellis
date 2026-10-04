@@ -82,9 +82,13 @@ Run tests: `bench --site development.localhost run-tests --module sprint.tests.t
 **`Dev Task`** for demos and any destructive testing.
 
 ## Git
-Standalone repo (`github.com/manask20/Sprint`), separate from the surrounding
-`frappe_docker` repo. Since 2026-07-13, feature commits land on **`dev`**
-(tracking `origin/dev`); `main` is the stable line, merged from `dev` when
-asked. Nothing is pushed unless asked. Everyday commands: `COMMANDS.md`.
+Standalone repo (`github.com/GorangMalvi/Frape-Trellis`; originally
+`github.com/manask20/Sprint`), separate from the surrounding `frappe_docker`
+repo. **`main` and `dev` are protected — PR only** (rulesets in
+`.github/rulesets/`; full process in `CONTRIBUTING.md`): branch
+`feat/*`/`fix/*` off `dev` → PR → squash-merge (deploys staging); release =
+PR `dev` → `main`, merge commit (deploys production after approval). CI
+(Lint / Frontend build / Server tests) must pass. Nothing is pushed unless
+asked. Everyday commands: `COMMANDS.md`.
 Recent arc: ticketing → Home/notifications/dashboards → calendar/watchers/
 templates → body editor → perf → hardening+tests → automation engine.
