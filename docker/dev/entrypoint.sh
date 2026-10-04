@@ -78,6 +78,9 @@ backend() {
 	wait_for_db
 	[ -f "$BENCH/sites/$SITE/site_config.json" ] || bootstrap
 
+	# passwordless login (code + link printed to these logs) — dev only, see sprint/dev_login.py
+	(cd "$BENCH" && bench --site "$SITE" set-config --parse sprint_dev_login "${DEV_LOGIN:-1}" >/dev/null)
+
 	want="$(cat /opt/sprint-build-id)"
 	have="$(cat "$STAMP" 2>/dev/null || true)"
 	if [ "$want" != "$have" ]; then

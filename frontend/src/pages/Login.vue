@@ -9,11 +9,12 @@
               S
             </div>
             <h1 class="lg-auth-title text-xl font-semibold">
-              {{ mode === 'signin' ? 'Welcome Back, Wanderer' : 'Reset your password' }}
+              {{ mode === 'forgot' ? 'Reset your password' : 'Welcome Back, Wanderer' }}
             </h1>
             <p v-if="mode === 'forgot'" class="lg-auth-sub -mt-1 text-center text-sm">
               Enter your email and we’ll send you a reset link.
             </p>
+            <span v-if="mode === 'dev'" class="lg-dev-badge">Local development login</span>
           </div>
 
           <!-- liquid-glass card (draggable — slide it over the artwork to play
@@ -29,8 +30,54 @@
             @pointercancel="endDrag"
           >
             <div class="lg-grip" title="Drag to move · double-click to recenter" @dblclick="resetPos" />
+            <!-- local dev: one-time code / link printed to the server terminal -->
+            <form v-if="mode === 'dev'" @submit.prevent="codeSent ? submitDevCode() : sendDevCode()">
+              <label class="lg-label">Email or username</label>
+              <input
+                ref="devEmailEl"
+                v-model="email"
+                type="text"
+                autocomplete="username"
+                placeholder="Administrator"
+                class="lg-input mb-3"
+                :readonly="codeSent"
+              />
+              <template v-if="codeSent">
+                <p class="lg-hint">
+                  A code and a login link were printed in the server terminal:
+                  <code>docker compose logs -f frappe</code>
+                </p>
+                <label class="lg-label">Login code</label>
+                <input
+                  ref="codeEl"
+                  v-model="code"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  placeholder="123456"
+                  class="lg-input tracking-[0.3em]"
+                />
+              </template>
+
+              <p v-if="error" class="lg-error">{{ error }}</p>
+
+              <button type="submit" class="lg-primary mt-5" :disabled="loading">
+                <LucideLoader2 v-if="loading" class="h-4 w-4 animate-spin" />
+                <span>{{ codeSent ? 'Sign in' : 'Send login code' }}</span>
+              </button>
+
+              <div v-if="codeSent" class="mt-4 flex justify-between">
+                <button type="button" class="lg-textbtn !w-auto" @click="resetDev">Use a different email</button>
+                <button type="button" class="lg-textbtn !w-auto" :disabled="loading" @click="sendDevCode">Resend code</button>
+              </div>
+              <button type="button" class="lg-textbtn mt-4" @click="switchMode('signin')">
+                Sign in with password instead
+              </button>
+            </form>
+
             <!-- sign in -->
-            <form v-if="mode === 'signin'" @submit.prevent="submit">
+            <form v-else-if="mode === 'signin'" @submit.prevent="submit">
               <label class="lg-label">Email or username</label>
               <input
                 ref="emailEl"
@@ -58,6 +105,9 @@
 
               <button type="button" class="lg-textbtn mt-4" @click="switchMode('forgot')">
                 Forgot your password?
+              </button>
+              <button v-if="devLogin" type="button" class="lg-textbtn mt-2" @click="switchMode('dev')">
+                Use a login code instead (local dev)
               </button>
             </form>
 
@@ -107,20 +157,27 @@
 <script setup>
 import { ref, reactive, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { login, requestPasswordReset } from '@/lib/auth'
+import { login, requestPasswordReset, requestDevLoginCode, loginWithDevCode } from '@/lib/auth'
 import { errorMessage } from '@/store'
 import { useLiquidGlass } from '@/composables/useLiquidGlass'
 import loginBg from '@/assets/login-bg.webp'
 
 const route = useRoute()
 
-const mode = ref('signin')
-const email = ref('')
+// Local development (boot `dev_login`): sign in with a one-time code / link that
+// the server prints to its terminal. Password sign-in stays one click away.
+const devLogin = !!window.dev_login
+const mode = ref(devLogin ? 'dev' : 'signin')
+const email = ref(devLogin ? 'Administrator' : '')
 const password = ref('')
+const code = ref('')
+const codeSent = ref(false)
 const loading = ref(false)
-const error = ref('')
+const error = ref(route.query.dev_link === 'expired' ? 'That login link has expired or was already used.' : '')
 const sent = ref(false)
 const emailEl = ref(null)
+const devEmailEl = ref(null)
+const codeEl = ref(null)
 const forgotEl = ref(null)
 const cardEl = ref(null)
 
@@ -128,7 +185,7 @@ const cardEl = ref(null)
 // (Chromium; frosted fallback on Safari/Firefox).
 useLiquidGlass(cardEl, { scale: -120, chroma: 7, border: 0.06, mapBlur: 14, blur: 3, saturate: 1.8, radius: 26 })
 
-onMounted(() => nextTick(() => emailEl.value?.focus()))
+onMounted(() => nextTick(() => (mode.value === 'dev' ? devEmailEl.value : emailEl.value)?.focus()))
 
 // ---- draggable card ----------------------------------------------------
 // Slide the glass card around over the artwork; the backdrop refraction
@@ -182,7 +239,55 @@ function switchMode(m) {
   mode.value = m
   error.value = ''
   sent.value = false
-  nextTick(() => (m === 'forgot' ? forgotEl.value : emailEl.value)?.focus())
+  codeSent.value = false
+  code.value = ''
+  nextTick(() => ({ forgot: forgotEl, dev: devEmailEl }[m] || emailEl).value?.focus())
+}
+
+function redirectTarget() {
+  const redirect = route.query.redirect
+  return typeof redirect === 'string' ? redirect : '/'
+}
+
+async function sendDevCode() {
+  error.value = ''
+  if (!email.value.trim()) {
+    error.value = 'Enter your email or username.'
+    return
+  }
+  loading.value = true
+  try {
+    await requestDevLoginCode(email.value.trim(), redirectTarget())
+    codeSent.value = true
+    code.value = ''
+    nextTick(() => codeEl.value?.focus())
+  } catch (e) {
+    error.value = errorMessage(e, 'Could not create a login code.')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function submitDevCode() {
+  error.value = ''
+  if (!/^\d{6}$/.test(code.value.trim())) {
+    error.value = 'Enter the 6-digit code from the terminal.'
+    return
+  }
+  loading.value = true
+  try {
+    await loginWithDevCode(email.value.trim(), code.value.trim(), redirectTarget())
+  } catch (e) {
+    error.value = errorMessage(e, 'That code did not work.')
+    loading.value = false
+  }
+}
+
+function resetDev() {
+  codeSent.value = false
+  code.value = ''
+  error.value = ''
+  nextTick(() => devEmailEl.value?.focus())
 }
 
 async function submit() {
@@ -316,6 +421,28 @@ async function sendReset() {
   outline: none;
   border-color: #4da3ff;
   background: rgb(255 255 255 / 0.18);
+}
+.lg-dev-badge {
+  margin-top: -0.25rem;
+  border-radius: 999px;
+  background: rgb(255 179 64 / 0.9);
+  padding: 0.125rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #3b2300;
+}
+.lg-hint {
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 0.8);
+}
+.lg-hint code {
+  border-radius: 0.25rem;
+  background: rgb(0 0 0 / 0.35);
+  padding: 0.05rem 0.3rem;
+  font-size: 0.75rem;
+  color: #fff;
 }
 .lg-error {
   margin-top: 0.75rem;

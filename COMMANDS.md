@@ -23,6 +23,9 @@ docker compose down              # STOP (volumes kept; down -v = wipe bench + DB
 docker compose logs -f frappe    # all logs (web, worker, socketio, Vite = sprint_ui)
 
 curl http://localhost:8000/api/method/ping     # health check → pong
+
+# sign in: request a code on the login page, then read it (and the login link) here
+docker compose logs -f frappe | grep -A5 "SPRINT DEV LOGIN"
 ```
 
 URLs: app `http://localhost:8000/sprint` · live-reload `http://localhost:8080/sprint` ·

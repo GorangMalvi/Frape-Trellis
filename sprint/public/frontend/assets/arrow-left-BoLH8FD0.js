@@ -1,0 +1,2 @@
+import{m as t,o as n,c as r,a as o}from"./index-D6B02ex2.js";const l={class:"lucide lucide-arrow-left",xmlns:"http://www.w3.org/2000/svg",width:"24",height:"24",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor","stroke-width":"1.5","stroke-linecap":"round","stroke-linejoin":"round"};function s(a,e){return n(),r("svg",l,[...e[0]||(e[0]=[o("path",{d:"m12 19-7-7 7-7"},null,-1),o("path",{d:"M19 12H5"},null,-1)])])}const c=t({name:"lucide-arrow-left",render:s});export{c as _};
+//# sourceMappingURL=arrow-left-BoLH8FD0.js.map
