@@ -1,0 +1,6 @@
+# Owners are auto-requested for review on every PR.
+# Add teammates here (e.g. "/frontend/ @someone") as the team grows.
+*                    @GorangMalvi
+
+# Deployment pipeline and merge rules — changes here affect production.
+/.github/            @GorangMalvi
