@@ -12,23 +12,24 @@ Rules of thumb:
 
 ---
 
-## Dev environment — `development.localhost:8000`
+## Dev environment — `localhost:8000`
 
-Run from the **frappe_docker checkout root**:
+Run from the **repo root** (`docker-compose.yml`, see `docker/dev/`):
 
 ```bash
-# START (two steps)
-docker compose -f .devcontainer/docker-compose.yml up -d
-docker exec -d -w /workspace/development/frappe-bench devcontainer-frappe-1 bench start
+docker compose up -d             # START backend (8000) + Vite live-reload frontend (8080)
+docker compose up -d --build     # START + refresh: if app sources changed → yarn build, bench build, migrate
+docker compose down              # STOP (volumes kept; down -v = wipe bench + DB)
+docker compose logs -f frappe    # all logs (web, worker, socketio, Vite = sprint_ui)
 
-# STOP
-docker compose -f .devcontainer/docker-compose.yml stop
-
-# health check
-curl http://development.localhost:8000/api/method/ping     # → pong
+curl http://localhost:8000/api/method/ping     # health check → pong
 ```
 
-URLs: app `http://development.localhost:8000/sprint` · Desk `/desk`
+URLs: app `http://localhost:8000/sprint` · live-reload `http://localhost:8080/sprint` ·
+Desk `/desk` (Administrator / admin). `development.localhost` works too.
+First `up` bootstraps everything (~10 min). The container is still named
+`devcontainer-frappe-1`, so the `docker exec` commands below are unchanged.
+(The older two-step frappe_docker flow in `DEPLOYMENT.md` still works.)
 
 ## While developing (run from anywhere)
 
@@ -60,9 +61,8 @@ docker exec -w /workspace/development/frappe-bench devcontainer-frappe-1 \
 ## If things wedge
 
 ```bash
-# graceful container restart (NEVER pkill -9), then bench start again
-docker restart devcontainer-frappe-1
-docker exec -d -w /workspace/development/frappe-bench devcontainer-frappe-1 bench start
+# graceful restart (NEVER pkill -9) — bench start comes back on its own
+docker compose restart frappe
 ```
 
 ## Data note

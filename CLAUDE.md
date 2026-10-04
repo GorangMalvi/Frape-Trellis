@@ -53,9 +53,9 @@ notifications, per-space dashboards, card templates, @mentions, and the
 - **Build the frontend inside the devcontainer**, never on the host (host
   `node_modules` are Linux/rollup-specific and fail):
   `docker exec devcontainer-frappe-1 bash -lc 'cd /workspace/development/frappe-bench/apps/sprint/frontend && yarn build --base=/assets/sprint/frontend/'`
-- The dev web server is `bench start` inside the container; a `docker restart`
-  (needed after `hooks.py` changes) stops it — relaunch with `bench start` and
-  confirm `/api/method/ping` → pong.
+- The dev web server is `bench start`, run by the container's entrypoint; after
+  `hooks.py` changes use `docker compose restart frappe` (it comes back on its
+  own) and confirm `/api/method/ping` → pong.
 - Migrations are **idempotent `ensure_*` functions** run automatically on
   `bench migrate` via the `after_migrate` hook. Add new schema there; also
   callable one-off via `bench --site development.localhost execute sprint.setup.<fn>`.
@@ -71,6 +71,10 @@ notifications, per-space dashboards, card templates, @mentions, and the
   `get_cards` intentionally ships the whole space (client-side filter/sort/group).
 
 ## Build & verify
+Dev stack: `docker compose up -d` from the repo root starts backend (:8000) + Vite
+live-reload (:8080); `docker compose up -d --build` additionally rebuilds the
+frontend + migrates when app sources changed (fingerprint in `docker/dev/Dockerfile`,
+logic in `docker/dev/entrypoint.sh`). Container name is still `devcontainer-frappe-1`.
 After any `frontend/src` change, build in the container (command above); hard-refresh `/sprint`.
 Backend (`api.py`/`automation.py`) auto-reloads; if wedged, graceful
 `docker restart devcontainer-frappe-1` (then `bench start` — never `pkill -9`).

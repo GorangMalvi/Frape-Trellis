@@ -1,0 +1,6 @@
+.git
+**/node_modules
+.deploy
+sprint/public/frontend
+**/__pycache__
+*.pyc
