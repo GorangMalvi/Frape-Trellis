@@ -127,6 +127,10 @@ docker exec -w /workspace/development/frappe-bench/apps/sprint/frontend devconta
 ---
 
 ## Production (optional — self-hosting your own instance)
+> **Deploys:** once a server is set up as below, `bash scripts/deploy.sh <staging|production>`
+> updates it over SSH (backup, migrate, restart, health check, auto-rollback).
+> See **`CONTRIBUTING.md` → Deploying**.
+
 Same as steps 1–5 on a server, with these changes:
 - **Private repo:** use a read-only **SSH deploy key** for the clone/get-app — never a PAT.
 - **Skip the build spike:** the repo commits prebuilt frontend assets, so on a small box
