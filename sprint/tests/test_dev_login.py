@@ -84,6 +84,25 @@ class TestDevLogin(IntegrationTestCase):
 			self.assertEqual(frappe.local.response["location"], "/sprint/login?dev_link=expired")
 		self.assertEqual(self.logged_in, ["Administrator"])
 
+	def test_frappe_login_page_link_goes_to_desk(self):
+		with patch.dict(frappe.conf, ON):
+			dev_login.send_login_link("admin@example.com")  # Administrator's email
+		user, _, link = self.printed[-1]
+		self.assertEqual(user, "Administrator")
+		self.assertIn("redirect=/desk", link)
+		token = link.split("token=", 1)[1].split("&", 1)[0]
+		with patch.dict(frappe.conf, ON):
+			dev_login.login_with_link(token, redirect="/desk")
+		self.assertEqual(self.logged_in, ["Administrator"])
+		self.assertEqual(frappe.local.response["location"], "/desk")
+
+	def test_frappe_login_page_delegates_when_disabled(self):
+		with patch.dict(frappe.conf, {"developer_mode": 0, "sprint_dev_login": 0}):
+			with patch("frappe.www.login.send_login_link") as original:
+				dev_login.send_login_link("admin@example.com")
+		original.assert_called_once_with("admin@example.com")
+		self.assertEqual(self.printed, [])
+
 	def test_unknown_user_prints_nothing(self):
 		with patch.dict(frappe.conf, ON):
 			self.assertEqual(dev_login.request_code("nobody@example.com"), {"ok": True})

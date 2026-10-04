@@ -30,6 +30,13 @@ def _require_enabled():
 		frappe.throw(_("Dev login is not enabled on this site."), frappe.PermissionError)
 
 
+def sync_login_page():
+	"""Show/hide the "Login with Email Link" button on Frappe's /login page to
+	match dev login. Called by the Docker dev entrypoint on every start:
+	    bench --site <site> execute sprint.dev_login.sync_login_page"""
+	frappe.db.set_single_value("System Settings", "login_with_email_link", 1 if is_enabled() else 0)
+
+
 def _code_key(user):
 	return f"sprint_dev_login:code:{user}"
 
@@ -56,11 +63,27 @@ def _login_as(user):
 
 
 def _safe_redirect(path):
-	"""Only same-app paths: '/sprint/…'. Anything else → the app root."""
+	"""Only local paths into Sprint or Desk. Anything else → the Sprint root."""
 	path = path or ""
-	if path.startswith("/sprint") and not path.startswith("//"):
+	if path.startswith(("/sprint", "/desk", "/app")) and not path.startswith("//"):
 		return path
 	return "/sprint/"
+
+
+def _issue(user, redirect):
+	"""Create a single-use code + login link for `user` and print them."""
+	code = f"{secrets.randbelow(10**6):06d}"
+	token = secrets.token_urlsafe(32)
+	frappe.cache.set_value(_code_key(user), {"code": code, "attempts": 0}, expires_in_sec=TTL_SECONDS)
+	frappe.cache.set_value(_link_key(token), user, expires_in_sec=TTL_SECONDS)
+	# the host the browser used (:8000, or :8080 via the Vite proxy)
+	request = getattr(frappe.local, "request", None)
+	host = request.host_url.rstrip("/") if request else frappe.utils.get_url()
+	link = (
+		f"{host}/api/method/sprint.dev_login.login_with_link"
+		f"?token={token}&redirect={quote(_safe_redirect(redirect))}"
+	)
+	_print_to_terminal(user, code, link)
 
 
 def _print_to_terminal(user, code, link):
@@ -85,21 +108,29 @@ def request_code(email, redirect=None):
 	_require_enabled()
 	user = _resolve_user(email)
 	if user:
-		code = f"{secrets.randbelow(10**6):06d}"
-		token = secrets.token_urlsafe(32)
-		frappe.cache.set_value(_code_key(user), {"code": code, "attempts": 0}, expires_in_sec=TTL_SECONDS)
-		frappe.cache.set_value(_link_key(token), user, expires_in_sec=TTL_SECONDS)
-		# the host the browser used (:8000, or :8080 via the Vite proxy)
-		request = getattr(frappe.local, "request", None)
-		host = request.host_url.rstrip("/") if request else frappe.utils.get_url()
-		link = (
-			f"{host}/api/method/sprint.dev_login.login_with_link"
-			f"?token={token}&redirect={quote(_safe_redirect(redirect))}"
-		)
-		_print_to_terminal(user, code, link)
+		_issue(user, redirect)
 	else:
 		print(f"[sprint dev login] no enabled user matches {email!r}; nothing sent", flush=True)
 	return {"ok": True}
+
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(limit=10, seconds=60)
+def send_login_link(email: str):
+	"""Override of Frappe's `frappe.www.login.send_login_link` (hooks.py) — the
+	"Login with Email Link" button on Frappe's own /login page.
+
+	Dev login on: print the code + link (→ /desk) to the terminal instead of
+	emailing. Off (production): exactly Frappe's original behaviour."""
+	if not is_enabled():
+		from frappe.www import login as frappe_login
+
+		return frappe_login.send_login_link(email)
+	user = _resolve_user(email)
+	if user:
+		_issue(user, "/desk")
+	else:
+		print(f"[sprint dev login] no enabled user matches {email!r}; nothing sent", flush=True)
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])

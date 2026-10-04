@@ -44,7 +44,9 @@ docker compose down             # stop (data kept; `down -v` wipes it)
 **Signing in locally:** the login page asks for an email/username (pre-filled with
 `Administrator`) and prints a **6-digit code and a one-click login link** to the server logs
 (`docker compose logs -f frappe`). Paste the code or open the link. Both are single-use and expire
-after 10 min. "Sign in with password instead" still works (`Administrator` / `admin`). This dev login
+after 10 min. The same works on Frappe's own login page (http://localhost:8000/login → **Login with
+Email Link**, e.g. `admin@example.com`): the link lands on `/desk`. Password login still works
+(`Administrator` / `admin`). This dev login
 only exists when the site has `developer_mode` **and** `sprint_dev_login` set (the Docker stack sets
 both; `DEV_LOGIN: "0"` in `docker-compose.yml` turns it off), so it never runs in production.
 

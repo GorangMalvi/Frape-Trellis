@@ -193,9 +193,11 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "sprint.event.get_events"
-# }
+override_whitelisted_methods = {
+	# Local dev only: Frappe's "Login with Email Link" prints the link to the terminal
+	# instead of emailing it. Delegates to Frappe's own method when dev login is off.
+	"frappe.www.login.send_login_link": "sprint.dev_login.send_login_link",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
