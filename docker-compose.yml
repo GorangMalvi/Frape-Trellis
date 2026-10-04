@@ -27,6 +27,7 @@ x-dev-image: &dev-image
     ADMIN_PASSWORD: admin
     SEED_DEMO: "1"          # load sprint/demo_data.json on first run
     VITE_DEV: "1"           # also run the Vite live-reload dev server on :8080
+    DEV_LOGIN: "1"          # login with a code/link printed in `docker compose logs -f frappe`
 
 services:
   mariadb:

@@ -21,6 +21,17 @@ export async function login(email, password, redirectPath = '/') {
   window.location.href = appUrl(redirectPath)
 }
 
+// Local development only (boot `dev_login`): the server prints a one-time code
+// and a login link to its terminal instead of emailing them.
+export function requestDevLoginCode(email, redirectPath = '/') {
+  return call('sprint.dev_login.request_code', { email, redirect: appUrl(redirectPath) })
+}
+
+export async function loginWithDevCode(email, code, redirectPath = '/') {
+  await call('sprint.dev_login.verify_code', { email, code })
+  window.location.href = appUrl(redirectPath)
+}
+
 export async function logout() {
   try {
     await call('logout')

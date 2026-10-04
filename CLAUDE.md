@@ -75,6 +75,9 @@ Dev stack: `docker compose up -d` from the repo root starts backend (:8000) + Vi
 live-reload (:8080); `docker compose up -d --build` additionally rebuilds the
 frontend + migrates when app sources changed (fingerprint in `docker/dev/Dockerfile`,
 logic in `docker/dev/entrypoint.sh`). Container name is still `devcontainer-frappe-1`.
+Local login = code/link printed to `docker compose logs frappe`, on /sprint/login and on
+Frappe's /login "Login with Email Link" (hooks override of `send_login_link`) (`sprint/dev_login.py`;
+requires site `developer_mode` + `sprint_dev_login`, never set in production).
 After any `frontend/src` change, build in the container (command above); hard-refresh `/sprint`.
 Backend (`api.py`/`automation.py`) auto-reloads; if wedged, graceful
 `docker restart devcontainer-frappe-1` (then `bench start` — never `pkill -9`).

@@ -78,6 +78,14 @@ backend() {
 	wait_for_db
 	[ -f "$BENCH/sites/$SITE/site_config.json" ] || bootstrap
 
+	# passwordless login (code + link printed to these logs) — dev only, see sprint/dev_login.py
+	# (works on Sprint's /sprint/login and on Frappe's own /login "Login with Email Link")
+	(
+		cd "$BENCH"
+		bench --site "$SITE" set-config --parse sprint_dev_login "${DEV_LOGIN:-1}" >/dev/null
+		bench --site "$SITE" execute sprint.dev_login.sync_login_page >/dev/null
+	)
+
 	want="$(cat /opt/sprint-build-id)"
 	have="$(cat "$STAMP" 2>/dev/null || true)"
 	if [ "$want" != "$have" ]; then

@@ -26,6 +26,12 @@ def _boot_can_manage():
 	return frappe.session.user != "Guest" and _is_manager()
 
 
+def _boot_dev_login():
+	from sprint.dev_login import is_enabled
+
+	return is_enabled()
+
+
 def get_boot():
 	return frappe._dict(
 		{
@@ -39,6 +45,8 @@ def get_boot():
 			# so the in-app User admin page gates correctly before any space loads.
 			"can_manage": _boot_can_manage(),
 			"setup_complete": cint(frappe.get_system_settings("setup_complete")),
+			# local development only: login code/link printed to the terminal
+			"dev_login": _boot_dev_login(),
 			"timezone": {
 				"system": get_system_timezone(),
 				"user": frappe.db.get_value("User", frappe.session.user, "time_zone")
